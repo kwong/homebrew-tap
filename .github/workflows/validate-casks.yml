@@ -29,5 +29,6 @@ jobs:
       - name: Audit casks
         run: |
           for file in Casks/*.rb; do
-            brew audit --cask "$file"
+            token="$(basename "$file" .rb)"
+            brew audit --cask "$token"
           done
