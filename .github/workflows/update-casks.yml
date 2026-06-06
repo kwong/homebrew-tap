@@ -49,10 +49,7 @@ jobs:
 
       - name: Audit changed casks
         if: steps.changed.outputs.has_changes == 'true'
-        run: |
-          for file in ${{ steps.changed.outputs.files }}; do
-            brew audit --cask "$file"
-          done
+        run: brew audit --cask --changed
 
       - name: Commit updates
         if: steps.changed.outputs.has_changes == 'true'
