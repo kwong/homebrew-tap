@@ -66,7 +66,7 @@ Each cask should define:
 - the install stanza for that app, such as `app` for app bundles in `.zip` or `.dmg` assets, or `pkg` for installer packages
 - cleanup paths in `zap`, plus `uninstall` rules when the app is installed by a `.pkg`
 
-The file `Casks/audx.rb.template` is an example template that can be copied and adapted for other apps.
+The file `Casks/audx.rb.template` is an `audx`-shaped example template that can be copied and adapted for other apps. It is not a fully generic template yet.
 
 ## Release flow for an app
 
@@ -76,7 +76,7 @@ For each app release:
 2. Calculate its checksum:
 
 ```bash
-shasum -a 256 dist/my-app-1.2.3.dmg
+shasum -a 256 /path/to/my-app-1.2.3.dmg
 ```
 
 3. Create or update the app's cask in `Casks/<app>.rb`
@@ -108,9 +108,9 @@ url "https://github.com/kwong/my-app/releases/download/v#{version}/my-app-#{vers
 
 ## audx example
 
-`audx` now ships both `.dmg` and `.pkg` assets in `v0.1.2`, and this tap targets the DMG so Homebrew installs the app bundle directly.
+`audx` currently targets the DMG release asset, so Homebrew installs the app bundle directly.
 
-The live `audx` cask should follow this shape:
+The live `audx` cask currently follows this shape:
 
 ```ruby
 version "0.1.2"
@@ -144,8 +144,11 @@ brew tap kwong/tap
 brew install --cask <app>
 ```
 
+Then launch the app and confirm it reports the expected release version.
+
 ## Notes
 
 - Homebrew installs real cask files such as `Casks/audx.rb`; it does not install directly from a template file.
 - A single tap repo can host as many app casks as you want.
 - Each app still needs its own cask file because version, checksum, URL, metadata, installer type, and cleanup paths are app-specific.
+- Release assets must be publicly downloadable if this tap is meant to work for normal Homebrew users.
