@@ -26,9 +26,16 @@ jobs:
             ruby -c "$file"
           done
 
+      - name: Register local tap
+        run: |
+          TAP_DIR="$(brew --repository)/Library/Taps/kwong/homebrew-tap"
+          mkdir -p "$(dirname "$TAP_DIR")"
+          rm -rf "$TAP_DIR"
+          ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
+
       - name: Audit casks
         run: |
           for file in Casks/*.rb; do
             token="$(basename "$file" .rb)"
-            brew audit --cask "$token"
+            HOMEBREW_NO_INSTALL_FROM_API=1 brew audit --cask "kwong/tap/$token"
           done
