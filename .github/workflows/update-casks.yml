@@ -60,8 +60,10 @@ jobs:
         env:
           HOMEBREW_REQUIRE_TAP_TRUST: "1"
         run: |
-          cd "$(brew --repository)/Library/Taps/kwong/homebrew-tap"
-          brew audit --cask --changed
+          for file in ${{ steps.changed.outputs.files }}; do
+            token="$(basename "$file" .rb)"
+            HOMEBREW_NO_INSTALL_FROM_API=1 brew audit --cask "kwong/tap/$token"
+          done
 
       - name: Commit updates
         if: steps.changed.outputs.has_changes == 'true'
