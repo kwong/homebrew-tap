@@ -1,0 +1,92 @@
+name: Update Casks
+
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-casks:
+    runs-on: macos-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH_NAME: automation/update-casks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update managed casks
+        run: python3 scripts/update_casks.py
+
+      - name: Collect changed casks
+        id: changed
+        run: |
+          CHANGED="$(git diff --name-only -- 'Casks/*.rb' | tr '\n' ' ')"
+          echo "files=$CHANGED" >> "$GITHUB_OUTPUT"
+          if [ -z "$CHANGED" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate cask syntax
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          for file in ${{ steps.changed.outputs.files }}; do
+            ruby -c "$file"
+          done
+
+      - name: Audit changed casks
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          for file in ${{ steps.changed.outputs.files }}; do
+            brew audit --cask "$file"
+          done
+
+      - name: Commit updates
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          git checkout -B "$BRANCH_NAME"
+          git add .github/managed-casks.json scripts/update_casks.py ${{ steps.changed.outputs.files }}
+          git commit -m "chore: update Homebrew casks"
+          git push --force-with-lease origin "$BRANCH_NAME"
+
+      - name: Open or update pull request
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          BODY_FILE="$(mktemp)"
+          {
+            echo "## Summary"
+            echo
+            git diff --name-only HEAD^ HEAD -- 'Casks/*.rb' | while read -r file; do
+              old_version="$(git show HEAD^:"$file" | ruby -ne 'puts $1 if $_ =~ /^\s*version\s+\"(.*)\"$/' | head -n 1)"
+              new_version="$(ruby -ne 'puts $1 if $_ =~ /^\s*version\s+\"(.*)\"$/' "$file" | head -n 1)"
+              new_url="$(ruby -ne 'puts $1 if $_ =~ /^\s*url\s+\"(.*)\"$/' "$file" | head -n 1)"
+              new_sha="$(ruby -ne 'puts $1 if $_ =~ /^\s*sha256\s+\"(.*)\"$/' "$file" | head -n 1)"
+              echo "- \`$(basename "$file" .rb)\`: \`$old_version\` -> \`$new_version\`"
+              echo "  URL: \`$new_url\`"
+              echo "  SHA-256: \`$new_sha\`"
+            done
+          } > "$BODY_FILE"
+
+          PR_NUMBER="$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number')"
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            gh pr edit "$PR_NUMBER" --title "chore: update Homebrew casks" --body-file "$BODY_FILE"
+          else
+            gh pr create \
+              --base main \
+              --head "$BRANCH_NAME" \
+              --title "chore: update Homebrew casks" \
+              --body-file "$BODY_FILE"
+          fi

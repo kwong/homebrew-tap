@@ -1,0 +1,11 @@
+{
+  "casks": [
+    {
+      "token": "audx",
+      "repo": "kwong/audx",
+      "cask_path": "Casks/audx.rb",
+      "asset_pattern": "audx-{version}.dmg",
+      "url_template": "https://github.com/kwong/audx/releases/download/v#{version}/audx-#{version}.dmg"
+    }
+  ]
+}
