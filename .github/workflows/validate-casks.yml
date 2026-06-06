@@ -1,0 +1,33 @@
+name: Validate Casks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate updater script
+        run: python3 -m py_compile scripts/update_casks.py
+
+      - name: Validate cask syntax
+        run: |
+          for file in Casks/*.rb; do
+            ruby -c "$file"
+          done
+
+      - name: Audit casks
+        run: |
+          for file in Casks/*.rb; do
+            brew audit --cask "$file"
+          done
