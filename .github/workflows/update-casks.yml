@@ -26,6 +26,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Register local tap checkout
+        run: |
+          TAP_PARENT="$(brew --repository)/Library/Taps/kwong"
+          TAP_PATH="${TAP_PARENT}/homebrew-tap"
+          mkdir -p "$TAP_PARENT"
+          rm -rf "$TAP_PATH"
+          ln -s "$GITHUB_WORKSPACE" "$TAP_PATH"
+
       - name: Update managed casks
         run: python3 scripts/update_casks.py
 
@@ -49,7 +57,11 @@ jobs:
 
       - name: Audit changed casks
         if: steps.changed.outputs.has_changes == 'true'
-        run: brew audit --cask --changed
+        env:
+          HOMEBREW_REQUIRE_TAP_TRUST: "1"
+        run: |
+          cd "$(brew --repository)/Library/Taps/kwong/homebrew-tap"
+          brew audit --cask --changed
 
       - name: Commit updates
         if: steps.changed.outputs.has_changes == 'true'
