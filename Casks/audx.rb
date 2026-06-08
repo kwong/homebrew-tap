@@ -1,6 +1,6 @@
 cask "audx" do
-  version "0.1.3"
-  sha256 "009d2c87a9ddf9cbec8f34b9cc16a5d81706468faace7d9a1cd4678043c17480"
+  version "0.2.0"
+  sha256 "1e2761657bfb5421a75c6286e638b1a588de40959f55175627a0a739398e4ef4"
 
   url "https://github.com/kwong/audx/releases/download/v#{version}/audx-#{version}.dmg"
   name "audx"
